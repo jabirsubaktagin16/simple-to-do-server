@@ -21,13 +21,20 @@ const run = async () => {
     await client.connect();
     const tasksName = client.db("toDo").collection("tasks");
 
-    // GET All Tasks
+    // GET All Tasks by User
     app.get("/tasks", async (req, res) => {
       const email = req.query.email;
       const query = { email: email };
       const cursor = tasksName.find(query);
       const result = await cursor.toArray();
       res.send(result);
+    });
+
+    app.get("/tasks/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const taskDetails = await tasksName.findOne(query);
+      res.send(taskDetails);
     });
 
     // POST A Task
@@ -42,6 +49,24 @@ const run = async () => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const result = await tasksName.deleteOne(query);
+      res.send(result);
+    });
+
+    // Task Status Update
+    app.put("/tasks/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedTask = req.body;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          taskName: updatedTask.taskName,
+          taskDescription: updatedTask.taskDescription,
+          email: updatedTask.email,
+          taskCompleted: updatedTask.taskCompleted,
+        },
+      };
+      const result = await tasksName.updateOne(filter, updatedDoc, options);
       res.send(result);
     });
   } finally {
